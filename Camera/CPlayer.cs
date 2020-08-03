@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CPlayer : MonoBehaviour
-{
-    [SerializeField] private GameObject _Rueda;
+public class CPlayer : MonoBehaviour {
 
     private float _speed;
     private float _rotateSpeed;
     public Vector3 _direction;
-    private float _angleRotation;
+
+    private Animator anim;
+    private BoxCollider[] swordColliders;
 
     private void Awake() {
-        _angleRotation = 40f;
+        anim = GetComponent<Animator>();
+        swordColliders = GetComponentsInChildren<BoxCollider>();
+        EndAttack();
     }
 
     public float Speed {
@@ -28,30 +30,42 @@ public class CPlayer : MonoBehaviour
         set { _direction = value; }
     }
 
-    public void MakeAction( STATE state ) {
-        switch( state ) {
-            case STATE.Move_along:
-                _direction = transform.position;
-                transform.Translate( Vector3.forward * _speed * Time.deltaTime );
-                _direction = Vector3.Normalize( transform.position - _direction );
-                // movimiento de la rueda
-                _Rueda.transform.Rotate( Vector3.forward * ( _speed * _angleRotation ) * Time.deltaTime );
-                break;
-            case STATE.Move_back:
-                _direction = transform.position;
-                transform.Translate( Vector3.forward * -_speed * Time.deltaTime );
-                _direction = Vector3.Normalize( _direction - transform.position );
-                // movimiento de la rueda
-                _Rueda.transform.Rotate( Vector3.forward * ( -_speed * _angleRotation ) * Time.deltaTime );
-                break;
-            case STATE.Rotate_left:
-                transform.Rotate( new Vector3(0, -_rotateSpeed, 0) * Time.deltaTime );
-                rotateDirection( _rotateSpeed * Time.deltaTime ); 
-                break;
-            case STATE.Rotate_right:
-                transform.Rotate( new Vector3(0, _rotateSpeed, 0) * Time.deltaTime );
-                rotateDirection( -_rotateSpeed * Time.deltaTime ); 
-                break;
+    public void MakeAction( PLAYER_STATE state ) {
+        if( !GameManager.instance.GameOver ) { 
+            switch( state ) {
+                case PLAYER_STATE.Idle:
+                    anim.SetBool("IsWalking", false);
+                    resetDirection( PLAYER_STATE.Forward );
+                    break;
+                case PLAYER_STATE.Forward:
+                    anim.SetBool("IsWalking", true);
+                    _direction = transform.position;
+                    transform.Translate( Vector3.forward * _speed * Time.deltaTime );
+                    _direction = Vector3.Normalize( transform.position - _direction );
+                    resetDirection( PLAYER_STATE.Forward );
+                    break;
+                case PLAYER_STATE.Back:
+                    anim.SetBool("IsWalking", true);
+                    _direction = transform.position;
+                    transform.Translate( Vector3.forward * -_speed * Time.deltaTime );
+                    _direction = Vector3.Normalize( _direction - transform.position );
+                    resetDirection( PLAYER_STATE.Back );
+                    break;
+                case PLAYER_STATE.Left:
+                    transform.Rotate( new Vector3(0, -_rotateSpeed, 0) * Time.deltaTime );
+                    rotateDirection( _rotateSpeed * Time.deltaTime ); 
+                    break;
+                case PLAYER_STATE.Right:
+                    transform.Rotate( new Vector3(0, _rotateSpeed, 0) * Time.deltaTime );
+                    rotateDirection( -_rotateSpeed * Time.deltaTime ); 
+                    break;
+                case PLAYER_STATE.Attack_1:
+                    anim.Play("DoubleChop");
+                    break;
+                case PLAYER_STATE.Attack_2:
+                    anim.Play("SpinAttack");
+                    break;
+            }
         }
     } 
 
@@ -63,5 +77,27 @@ public class CPlayer : MonoBehaviour
         newDirection.x = _direction.x * cosTheta - _direction.z * sinTheta;
         newDirection.z = _direction.z * cosTheta + _direction.x * sinTheta;
         _direction = newDirection;
+    }
+
+    private void resetDirection( PLAYER_STATE state ) {
+        switch( state ) {
+            case PLAYER_STATE.Forward:
+                _rotateSpeed *= ( _rotateSpeed > 0 ? 1 : -1 );
+                break;
+            case PLAYER_STATE.Back:
+                _rotateSpeed *= ( _rotateSpeed < 0 ? 1 : -1 );
+                break;
+        }
+    }
+
+    public void BeginAttack() {
+        foreach (var weapon in swordColliders ) {
+            weapon.enabled = true;
+        }
+    }
+    public void EndAttack() {
+        foreach (var weapon in swordColliders ) {
+            weapon.enabled = false;
+        }
     }
 }

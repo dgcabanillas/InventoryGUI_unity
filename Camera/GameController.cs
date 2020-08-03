@@ -3,20 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public enum STATE {
-    Rotate_left,
-    Rotate_right,
-    Move_along,
-    Move_back,
-    Shoot
+public enum PLAYER_STATE {
+    Idle,
+    Left,
+    Right,
+    Forward,
+    Back,
+    Rotate,
+    Attack_1,
+    Attack_2
 }
 
-public class GameController : MonoBehaviour
-{
+public class GameController : MonoBehaviour {
+
     [SerializeField] private GameObject playerObject;
-    [SerializeField] private GameObject shooterObject;
     private CPlayer player;
-    private CShooter shooter;
     private Vector3 posCamera;
     private Vector3 rotCamera;
     private float distance;
@@ -26,15 +27,12 @@ public class GameController : MonoBehaviour
     {
         // Iniciamos datos de player
         Assert.IsNotNull( playerObject );
-        playerObject.transform.position = Vector3.zero;
+        playerObject.transform.position = new Vector3(-10f, 0, -2);
         playerObject.transform.eulerAngles = Vector3.zero;
         player = playerObject.GetComponent<CPlayer>();
         player.Direction = Vector3.forward;
-        player.Speed = 10f;
-        player.RotateSpeed = 60f;
-
-        Assert.IsNotNull( shooterObject );
-        shooter = shooterObject.GetComponent<CShooter>();
+        player.Speed = 5f;
+        player.RotateSpeed = 120f;
 
         // Iniciamos la cámara
         distance = 8f;
@@ -45,21 +43,27 @@ public class GameController : MonoBehaviour
 
     void Update() {
         if( Input.GetKey( KeyCode.W ) ) {
-            player.MakeAction( STATE.Move_along );
+            player.MakeAction( PLAYER_STATE.Forward );
             PositionCamera();
         } else if( Input.GetKey( KeyCode.S ) ) {
-            player.MakeAction( STATE.Move_back );
+            player.MakeAction( PLAYER_STATE.Back );
             PositionCamera();
-        } 
+        } else {
+            player.MakeAction( PLAYER_STATE.Idle );
+        }
+
         if( Input.GetKey( KeyCode.A ) ) {
-            player.MakeAction( STATE.Rotate_left );
+            player.MakeAction( PLAYER_STATE.Left );
             PositionCamera();
         } else if ( Input.GetKey( KeyCode.D ) ) {
-            player.MakeAction( STATE.Rotate_right );
+            player.MakeAction( PLAYER_STATE.Right );
             PositionCamera();
         }
-        if( Input.GetKey( KeyCode.Space ) ) {
-            shooter.MakeAction( STATE.Shoot );
+
+        if( Input.GetKey( KeyCode.J ) ) {
+            player.MakeAction( PLAYER_STATE.Attack_1 );
+        } else if ( Input.GetKey( KeyCode.L ) ) {
+            player.MakeAction( PLAYER_STATE.Attack_2 );
         }
 
         if( Input.GetKey( KeyCode.UpArrow ) ) transform.Rotate( new Vector3( -0.5f, 0, 0) * 10f * Time.deltaTime );
@@ -75,4 +79,5 @@ public class GameController : MonoBehaviour
         rotCamera.x = transform.eulerAngles.x;
         transform.eulerAngles = rotCamera;
     }
+
 }
